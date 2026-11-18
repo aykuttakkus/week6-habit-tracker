@@ -37,6 +37,9 @@ failing test used for the demonstration was removed afterward.
 - `GET /habits/{id}/checkins`
 - `GET /habits/{id}/streak` — returns the habit name and its consecutive check-in days
   ending today; the streak is `0` when today has no check-in
+- `GET /habits/{id}/summary` — returns the number of check-ins recorded over the seven-day
+  period covering today and the previous six days, together with the habit name and period
+  boundaries
 
 ## Files
 - `main.py` — the app
