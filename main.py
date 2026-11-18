@@ -95,8 +95,7 @@ def list_checkins(habit_id: int):
     return [r["day"] for r in rows]
 
 
-@app.get("/habits/{habit_id}/streak")
-def get_habit_streak(habit_id: int):
+def get_habit_checkin_dates(habit_id: int, today: date):
     with closing(get_db()) as conn:
         habit = conn.execute(
             "SELECT id, name FROM habits WHERE id = ?", (habit_id,)
@@ -108,18 +107,42 @@ def get_habit_streak(habit_id: int):
             "SELECT day FROM checkins WHERE habit_id = ?", (habit_id,)
         ).fetchall()
 
-    today = date.today()
-    checkin_days = set()
+    checkin_dates = []
     for row in rows:
         try:
             checkin_day = date.fromisoformat(row["day"])
         except ValueError:
             continue
         if checkin_day <= today:
-            checkin_days.add(checkin_day)
+            checkin_dates.append(checkin_day)
+
+    return habit, checkin_dates
+
+
+@app.get("/habits/{habit_id}/streak")
+def get_habit_streak(habit_id: int):
+    today = date.today()
+    habit, checkin_dates = get_habit_checkin_dates(habit_id, today)
+    checkin_days = set(checkin_dates)
 
     streak = 0
     while today - timedelta(days=streak) in checkin_days:
         streak += 1
 
     return {"habit_id": habit_id, "habit_name": habit["name"], "streak": streak}
+
+
+@app.get("/habits/{habit_id}/summary")
+def get_habit_summary(habit_id: int):
+    today = date.today()
+    habit, checkin_dates = get_habit_checkin_dates(habit_id, today)
+    first_day = today - timedelta(days=6)
+    checkins_last_7_days = sum(day >= first_day for day in checkin_dates)
+
+    return {
+        "habit_id": habit_id,
+        "habit_name": habit["name"],
+        "checkins_last_7_days": checkins_last_7_days,
+        "period_start": first_day.isoformat(),
+        "period_end": today.isoformat(),
+    }

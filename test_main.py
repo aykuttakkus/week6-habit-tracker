@@ -24,6 +24,17 @@ def check_in(habit_id, days_from_today=0):
     return client.post(f"/habits/{habit_id}/checkin", json={"day": day.isoformat()})
 
 
+def expected_weekly_summary(habit_id, checkin_count):
+    today = date.today()
+    return {
+        "habit_id": habit_id,
+        "habit_name": "Read 20 minutes",
+        "checkins_last_7_days": checkin_count,
+        "period_start": (today - timedelta(days=6)).isoformat(),
+        "period_end": today.isoformat(),
+    }
+
+
 def test_create_and_list_habit():
     r = client.post("/habits", json={"name": "Read 20 minutes"})
     assert r.status_code == 200
@@ -126,3 +137,55 @@ def test_streak_ignores_an_invalid_stored_date():
         "habit_name": "Read 20 minutes",
         "streak": 1,
     }
+
+
+def test_summary_unknown_habit_404():
+    response = client.get("/habits/99999/summary")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "unknown habit"}
+
+
+def test_summary_is_zero_without_checkins():
+    habit_id = create_habit()
+
+    response = client.get(f"/habits/{habit_id}/summary")
+
+    assert response.status_code == 200
+    assert response.json() == expected_weekly_summary(habit_id, 0)
+
+
+def test_summary_counts_checkins_in_the_last_week():
+    habit_id = create_habit()
+    for day_offset in (0, -2, -5):
+        check_in(habit_id, day_offset)
+
+    response = client.get(f"/habits/{habit_id}/summary")
+
+    assert response.status_code == 200
+    assert response.json() == expected_weekly_summary(habit_id, 3)
+
+
+def test_summary_includes_day_six_and_excludes_day_seven():
+    habit_id = create_habit()
+    check_in(habit_id, -6)
+    check_in(habit_id, -7)
+
+    response = client.get(f"/habits/{habit_id}/summary")
+
+    assert response.status_code == 200
+    assert response.json() == expected_weekly_summary(habit_id, 1)
+
+
+def test_summary_counts_duplicate_checkins_and_ignores_future_and_invalid_dates():
+    habit_id = create_habit()
+    check_in(habit_id, 0)
+    check_in(habit_id, 0)
+    check_in(habit_id, -1)
+    check_in(habit_id, 1)
+    client.post(f"/habits/{habit_id}/checkin", json={"day": "not-a-date"})
+
+    response = client.get(f"/habits/{habit_id}/summary")
+
+    assert response.status_code == 200
+    assert response.json() == expected_weekly_summary(habit_id, 3)
