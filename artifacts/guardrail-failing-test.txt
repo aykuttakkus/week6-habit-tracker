@@ -1,0 +1,25 @@
+Week 6 guardrail failure demonstration
+Date: 2026-11-18
+
+Command:
+./scripts/quality-gate.sh
+
+Temporary test:
+def test_guardrail_blocks_a_failing_test():
+    assert False, "intentional guardrail demonstration"
+
+Observed result:
+- Black format check passed.
+- Ruff lint check passed.
+- Pytest collected 4 tests.
+- The temporary demonstration test failed intentionally.
+- The 3 starter tests passed.
+- The quality gate exited with status 1, so the build was blocked.
+
+Pytest summary:
+FAILED test_guardrail_demo.py::test_guardrail_blocks_a_failing_test
+1 failed, 3 passed, 1 warning
+
+Cleanup:
+The temporary failing test was removed immediately after this demonstration. It is not
+part of the assignment's permanent test suite.
