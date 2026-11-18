@@ -6,7 +6,7 @@ on branches, open PRs, and run an AI reviewer.
 ## Setup
 ```bash
 pip install -r requirements.txt
-pytest                      # 3 tests should pass
+pytest
 uvicorn main:app --reload   # http://localhost:8000  (docs at /docs)
 ```
 
@@ -35,6 +35,8 @@ failing test used for the demonstration was removed afterward.
 - `GET /habits`
 - `POST /habits/{id}/checkin` `{ "day": "2026-09-22" }`
 - `GET /habits/{id}/checkins`
+- `GET /habits/{id}/streak` — returns the habit name and its consecutive check-in days
+  ending today; the streak is `0` when today has no check-in
 
 ## Files
 - `main.py` — the app
