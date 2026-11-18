@@ -12,6 +12,7 @@ Test:
 
 import sqlite3
 from contextlib import closing
+from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -92,3 +93,33 @@ def list_checkins(habit_id: int):
             "SELECT day FROM checkins WHERE habit_id = ? ORDER BY day", (habit_id,)
         ).fetchall()
     return [r["day"] for r in rows]
+
+
+@app.get("/habits/{habit_id}/streak")
+def get_habit_streak(habit_id: int):
+    with closing(get_db()) as conn:
+        habit = conn.execute(
+            "SELECT id, name FROM habits WHERE id = ?", (habit_id,)
+        ).fetchone()
+        if habit is None:
+            raise HTTPException(status_code=404, detail="unknown habit")
+
+        rows = conn.execute(
+            "SELECT day FROM checkins WHERE habit_id = ?", (habit_id,)
+        ).fetchall()
+
+    today = date.today()
+    checkin_days = set()
+    for row in rows:
+        try:
+            checkin_day = date.fromisoformat(row["day"])
+        except ValueError:
+            continue
+        if checkin_day <= today:
+            checkin_days.add(checkin_day)
+
+    streak = 0
+    while today - timedelta(days=streak) in checkin_days:
+        streak += 1
+
+    return {"habit_id": habit_id, "habit_name": habit["name"], "streak": streak}
