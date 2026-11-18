@@ -47,3 +47,4 @@ failing test used for the demonstration was removed afterward.
 - `docs/TASKS.md` — the two features to implement
 - `scripts/quality-gate.sh` — Black, Ruff, and pytest quality gate
 - `artifacts/guardrail-failing-test.txt` — proof that a failing test blocks the gate
+- `writeup.md` — guardrails, PR evidence, human-versus-AI review comparison, and reflection
